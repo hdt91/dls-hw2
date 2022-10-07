@@ -166,6 +166,7 @@ def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs
     loss_func = nn.SoftmaxLoss()
     opt = optimizer(model.parameters(), **kwargs)
 
+    foo = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16))
     for _ in range(epochs):
         for i, (X0, y0) in enumerate(zip(np.array_split(X, m//batch), np.array_split(y, m//batch))):
             opt.reset_grad()
@@ -952,7 +953,7 @@ def submit_nn_flatten():
     mugrade.submit(flatten_backward(2,2,2))
     mugrade.submit(flatten_backward(2,3,4,2,1,2))
     mugrade.submit(flatten_backward(2,3,4,4))
-    
+
 
 
 def test_optim_sgd_vanilla_1():

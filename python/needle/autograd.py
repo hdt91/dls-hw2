@@ -42,12 +42,12 @@ class CPUDevice(Device):
         return numpy.ones(shape, dtype=dtype)
 
     def randn(self, *shape):
-        # note: numpy doesn't support types within standard random routines, and 
+        # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
-        return numpy.random.randn(*shape) 
+        return numpy.random.randn(*shape)
 
     def rand(self, *shape):
-        # note: numpy doesn't support types within standard random routines, and 
+        # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
         return numpy.random.rand(*shape)
 
@@ -364,9 +364,13 @@ class Tensor(Value):
             return needle.ops.MulScalar(other)(self)
 
     def __pow__(self, other):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        # ### BEGIN YOUR SOLUTION
+        # raise NotImplementedError()
+        # ### END YOUR SOLUTION
+        if isinstance(other, Tensor):
+            raise NotImplementedError()
+        else:
+            return needle.ops.PowerScalar(other)(self)
 
     def __sub__(self, other):
         if isinstance(other, Tensor):
@@ -417,13 +421,27 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     # Special note on initializing gradient of
     # We are really taking a derivative of the scalar reduce_sum(output_node)
     # instead of the vector output_node. But this is the common case for loss function.
-    node_to_output_grads_list[output_tensor] = [out_grad]
+    # node_to_output_grads_list[output_tensor] = [out_grad]
+    node_to_output_grads_list[output_tensor] = out_grad
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    for node in reverse_topo_order:
+        # node.grad = sum(node_to_output_grads_list[node])
+        node.grad = node_to_output_grads_list[node]
+        if node.is_leaf():
+            continue
+        partial_grads = node.op.gradient_as_tuple(node.grad, node)
+        for input_node, partial_grad in zip(node.inputs, partial_grads):
+            # if not node_to_output_grads_list.get(input_node):
+            #     node_to_output_grads_list[input_node] = []
+            # node_to_output_grads_list[input_node].append(partial_grad)
+            if not node_to_output_grads_list.get(input_node):
+                node_to_output_grads_list[input_node] = partial_grad
+            else:
+                node_to_output_grads_list[input_node] += partial_grad
     ### END YOUR SOLUTION
 
 
@@ -436,14 +454,23 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     sort.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    visited: Dict[Value, bool] = {}
+    output: List[Value] = []
+    for node in node_list:
+        topo_sort_dfs(node, visited, output)
+    return output
     ### END YOUR SOLUTION
 
 
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    if visited.get(node) is True:
+        return
+    visited[node] = True
+    for input_node in node.inputs:
+        topo_sort_dfs(input_node, visited, topo_order)
+    topo_order.append(node)
     ### END YOUR SOLUTION
 
 
