@@ -29,15 +29,16 @@ class SGD(Optimizer):
         self.counter += 1
         ### BEGIN YOUR SOLUTION
         for idx, param in enumerate(self.params):
-            scaled_grad = ndl.ops.mul_scalar(param.grad.detach(), 1 - self.momentum)
+            grad = param.grad.detach()
+            if self.weight_decay > 0.0:
+                grad += param.detach() * self.weight_decay
+            scaled_grad = ndl.ops.mul_scalar(grad, 1 - self.momentum)
             if idx not in self.u:
                 self.u[idx] = scaled_grad
             else:
                 self.u[idx] = ndl.add(ndl.ops.mul_scalar(self.u[idx].detach(), self.momentum), scaled_grad).detach()
 
             param = ndl.add(param.detach(), ndl.mul_scalar(self.u[idx], -self.lr))
-            param = ndl.add(param.detach(), ndl.mul_scalar(self.params[idx].detach(), -self.lr * self.weight_decay))
-            # self.params[idx].data = ndl.Tensor(param, dtype="float32")
             self.params[idx].data = ndl.Tensor(param)
         ### END YOUR SOLUTION
 
@@ -66,9 +67,16 @@ class Adam(Optimizer):
     def step(self):
         ### BEGIN YOUR SOLUTION
         self.t += 1
+        decay_beta1 = (1 - self.beta1 ** self.t)
+        decay_beta2 = (1 - self.beta2 ** self.t)
+
         for idx, param in enumerate(self.params):
-            scaled_grad_1 = ndl.ops.mul_scalar(param.grad.detach(), 1 - self.beta1)
-            scaled_grad_2 = ndl.ops.mul_scalar(param.grad.detach() ** 2, 1 - self.beta2)
+            grad = param.grad.detach()
+            if self.weight_decay > 0.0:
+                grad += (param.detach() * self.weight_decay)
+
+            scaled_grad_1 = ndl.ops.mul_scalar(grad, 1 - self.beta1)
+            scaled_grad_2 = ndl.ops.mul_scalar(grad ** 2, 1 - self.beta2)
             if idx not in self.m:
                 self.m[idx] = scaled_grad_1
                 self.v[idx] = scaled_grad_2
@@ -76,12 +84,11 @@ class Adam(Optimizer):
                 self.m[idx] = ndl.add(ndl.ops.mul_scalar(self.m[idx].detach(), self.beta1), scaled_grad_1).detach()
                 self.v[idx] = ndl.add(ndl.ops.mul_scalar(self.v[idx].detach(), self.beta2), scaled_grad_2).detach()
 
-            m = self.m[idx] / (1 - self.beta1 ** self.t)
-            v = self.v[idx] / (1 - self.beta2 ** self.t)
+            m = self.m[idx] / decay_beta1
+            v = self.v[idx] / decay_beta2
 
-            update = ndl.mul_scalar(m / (v ** 0.5 + self.eps), -self.lr)
-            param = ndl.add(param.detach(), update)
-            param = ndl.add(param.detach(), ndl.mul_scalar(self.params[idx].detach(), -self.lr * self.weight_decay))
+            update = (m * -self.lr) / (v ** 0.5 + self.eps)
+            param = param.detach() + update
 
             self.params[idx].data = ndl.Tensor(param)
         ### END YOUR SOLUTION
