@@ -73,10 +73,10 @@ class Adam(Optimizer):
         for idx, param in enumerate(self.params):
             grad = param.grad.detach()
             if self.weight_decay > 0.0:
-                grad += (param.detach() * self.weight_decay)
+                grad = grad.detach() + (param.detach() * self.weight_decay)
 
-            scaled_grad_1 = ndl.ops.mul_scalar(grad, 1 - self.beta1)
-            scaled_grad_2 = ndl.ops.mul_scalar(grad ** 2, 1 - self.beta2)
+            scaled_grad_1 = ndl.ops.mul_scalar(grad, 1 - self.beta1).detach()
+            scaled_grad_2 = ndl.ops.mul_scalar(grad ** 2, 1 - self.beta2).detach()
             if idx not in self.m:
                 self.m[idx] = scaled_grad_1
                 self.v[idx] = scaled_grad_2
@@ -88,7 +88,7 @@ class Adam(Optimizer):
             v = self.v[idx] / decay_beta2
 
             update = (m * -self.lr) / (v ** 0.5 + self.eps)
-            param = param.detach() + update
+            param = param.detach() + update.detach()
 
-            self.params[idx].data = ndl.Tensor(param)
+            self.params[idx].data = ndl.Tensor(param.detach())
         ### END YOUR SOLUTION
